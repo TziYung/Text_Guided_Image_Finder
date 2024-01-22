@@ -24,6 +24,9 @@ class CLIP(tf.keras.Model):
         self.loss_tracker = tf.keras.metrics.Mean(name = "Loss")
 
     def call(self, input_, training = False):
+        # Quick note, the performance of CLIP is less sensitve in capcacity of text encoder
+        #TODO repalce flatten with global average pooling
+        # TODO replace gap with attention base
        
         input_id, attention_mask, image = input_
         t_f = self.text_encoder(input_id, attention_mask, training = training).last_hidden_state
@@ -97,9 +100,14 @@ class Projector(tf.keras.layers.Layer):
 class Similarity(tf.keras.layers.Layer):
     def __init__(self):
         super().__init__()
+        # Initial should be 0.07 and no larger than 100
+        # Or use fixed value
         self.temperature = self.add_weight(
             shape = (1,),
-            initializer = "random_normal",
+            # This use the default value in CLIP research paper
+            initializer = tf.keras.initializers.Constant(value = 0.07),
+            # The clip research paper state that for the stability, the temperature should be <= 100
+            constraint = ConstraintLEQ(),
             trainable = True,
         ) 
 
@@ -108,3 +116,8 @@ class Similarity(tf.keras.layers.Layer):
         similarity = tf.reduce_sum(similarity, axis = -1)
         similarity *= tf.math.exp(self.temperature) 
         return similarity
+class ConstraintLEQ(tf.keras.constraints.Constraint):
+    def __call__(self, w):
+        # If less than 100 it would be w * 1 + 100.0 * 0
+        # If larger than 100 it would be w * 0 + 100.0 * 1
+        return w * tf.cast(tf.math.less_equal(w, 100.), w.dtype) + 100. * tf.cast(tf.math.greater(w, 100.), w.dtype)
