@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import os
 import cv2
-def process_image(img_path_list: list, img_size: tuple, norm = True) -> list:
+def process_image(img_path_list: list, img_size: tuple, norm = False) -> list:
     # img_size is the width and length of the image in tuple
     processed_images = []
     
@@ -25,20 +25,21 @@ def process_image(img_path_list: list, img_size: tuple, norm = True) -> list:
 
     return processed_images
 class Loader(tf.keras.utils.Sequence):
-    def __init__(self, text_path,tkzr, img_dir_path, img_size, batch_size = 16, img_path_column = 0, text_column = -1):
+    def __init__(self, table_path,tkzr, img_dir_path, img_size, batch_size = 16, img_path_column = 0, text_column = -1):
         super().__init__()
-        self.text_path = text_path
-        self.text_info = self.load_information(self.text_path)
+        self.table_path = table_path
+        self.text_info = self.load_information(self.table_path)
         self.tkzr = tkzr
         self.img_size = img_size
         self.batch_size = batch_size
         self.img_dir_path = img_dir_path
         self.img_path_column = img_path_column
         self.text_column = text_column
+        # The length of longest sentence
         self.MAX_LEN = self.text_info.iloc[:, text_column].str.len().max()
 
-    def load_information(self, text_path):
-        info_table = pd.read_csv(self.text_path, index_col = False)
+    def load_information(self, table_path):
+        info_table = pd.read_csv(table_path, index_col = False)
         # Drop any row that contains null value and drop reset the index
         info_table.dropna(axis='index',how='any', inplace = True)
         info_table.reset_index(inplace = True, drop = True)
