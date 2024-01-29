@@ -17,6 +17,8 @@ class CLIP(tf.keras.Model):
         super().__init__()
         self.text_encoder = text_encoder
         self.image_encoder = image_encoder
+        # TODO deal with hyper parameter
+        self.attention_pooling = AttentionPooling(3, dim)
         self.text_projector = Projector(dim)
         self.image_projector = Projector(dim)
         self.similarity = Similarity()
@@ -25,16 +27,19 @@ class CLIP(tf.keras.Model):
 
     def call(self, input_, training = False):
         # Quick note, the performance of CLIP is less sensitve in capcacity of text encoder
-        #TODO repalce flatten with global average pooling
-        # TODO replace gap with attention base
        
         input_id, attention_mask, image = input_
         t_f = self.text_encoder(input_id, attention_mask, training = training).last_hidden_state
+        # TODO remove this line
         t_f = tf.keras.layers.Flatten()(t_f)
+        # TODO take the EOT of each text, since it considered to contains most information
         t_e = self.text_projector(t_f)
+
         i_f = self.image_encoder(image, training = training)
+        i_f = self.attention_pooling(i_f)
         i_f = tf.keras.layers.Flatten()(i_f)
         i_e = self.image_projector(i_f)
+        # TODO LN after t_f
 
         return self.similarity(t_e, i_e)
 
@@ -101,7 +106,21 @@ class Similarity(tf.keras.layers.Layer):
     def __init__(self):
         super().__init__()
         # Initial should be 0.07 and no larger than 100
-        # Or use fixed value
+        """
+        The reason to apply temerature after dot product
+        ''
+        During contrastive learning, we interpret the dot products 
+        as logits that are fed to the cross-entropy loss for each 
+        text and image example. Because we normalize the feature 
+        vectors, the dot products are capped between [-1, 1], which
+        might not have an enough dynamic range and limit the categorical
+        probability distributions that the logits can express. For this
+        reason, we scale the logits to have larger differences. To avoid
+        numerical instability, we clipped the scale value at 100, and
+        for all models that we trained, it reached 100
+        ''
+        """
+        
         self.temperature = self.add_weight(
             shape = (1,),
             # This use the default value in CLIP research paper
@@ -112,10 +131,53 @@ class Similarity(tf.keras.layers.Layer):
         ) 
 
     def call(self, text_emb, image_emb):
-        similarity = tf.einsum("ax, bx -> abx",text_emb, image_emb) 
-        similarity = tf.reduce_sum(similarity, axis = -1)
+        # Same as tf.matmul
+        similarity = tf.einsum("ax, bx -> ab",text_emb, image_emb) 
         similarity *= tf.math.exp(self.temperature) 
         return similarity
+class AttentionPooling(tf.keras.layers.Layer):
+    def __init__(self, num_head, key_dim):
+        super().__init__()
+        self.num_head = num_head
+        self.key_dim = key_dim
+        self.attention = tf.keras.layers.MultiHeadAttention(self.num_head, self.key_dim)
+        self.positional_encoding = PositionalEncoding()
+        
+    def call(self, inputs):
+        shape = inputs.shape
+        #print(shape)
+        tf.print(tf.shape(inputs))
+        layer = tf.keras.layers.Reshape((-1, shape[-1]))(inputs) # Change the shape to N(H*W)C
+
+
+        mean_ = tf.reduce_mean(layer, axis = 1, keepdims = True)
+
+
+        # It is replace by reduce mean
+        #mean_ = self.gap(inputs) # Apply GlobalAveragePooling, output shape would be N, 1, 1, C
+        #mean_ = tf.keras.layers.Reshape((shape[0], -1, shape[-1]))(mean_) # N, 1, C
+
+        layer = tf.keras.layers.Concatenate(axis = 1)([mean_, layer]) # N, (H * W) + 1, C
+
+        layer = self.positional_encoding(layer)
+        
+        mean_ = layer[:, :1, :] # Only use the mean as the query of attention
+
+        layer = self.attention(mean_, layer)
+
+ 
+        return layer
+class PositionalEncoding(tf.keras.layers.Layer):
+    def __init__(self):
+        super().__init__()
+    def build(self, input_shape):
+        self.pe = self.add_weight(
+            shape = ( input_shape),
+            trainable = True,
+        )    
+    def call(self, inputs):
+        return self.pe + inputs
+
 class ConstraintLEQ(tf.keras.constraints.Constraint):
     def __call__(self, w):
         # If less than 100 it would be w * 1 + 100.0 * 0
