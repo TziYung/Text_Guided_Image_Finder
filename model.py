@@ -13,12 +13,11 @@ class CLIP(tf.keras.Model):
     of each text against all the images in the batch. Then it calculate the 
     loss of each image against all the text in the batch.
     """
-    def __init__(self, text_encoder, image_encoder, dim):
+    def __init__(self, text_encoder, image_encoder, dim, image_encoder_head):
         super().__init__()
         self.text_encoder = text_encoder
         self.image_encoder = image_encoder
-        # TODO deal with hyper parameter
-        self.attention_pooling = AttentionPooling(3, dim)
+        self.attention_pooling = AttentionPooling(image_encoder_head, dim)
         self.text_projector = Projector(dim)
         self.image_projector = Projector(dim)
         self.similarity = Similarity()
