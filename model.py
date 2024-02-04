@@ -25,30 +25,35 @@ class CLIP(tf.keras.Model):
 
         self.loss_tracker = tf.keras.metrics.Mean(name = "Loss")
 
+        self.ln = tf.keras.layers.LayerNormalization()
+
     def call(self, input_, training = False):
         # Quick note, the performance of CLIP is less sensitve in capcacity of text encoder
        
         input_id, attention_mask, image = input_
         t_f = self.text_encoder(input_id, attention_mask, training = training).last_hidden_state
-        # TODO remove this line
-        t_f = tf.keras.layers.Flatten()(t_f)
-        # TODO take the EOT of each text, since it considered to contains most information
+        t_f = self.ln(t_f)
+        # take the EOT of each text, since it considered to contains most information
+        # 102 is the end id
+        eot = tf.where(tf.equal(input_id, 102))
+        
+        t_f = tf.gather_nd(t_f, eot)
+        
         t_e = self.text_projector(t_f)
 
         i_f = self.image_encoder(image, training = training)
         i_f = self.attention_pooling(i_f)
         i_f = tf.keras.layers.Flatten()(i_f)
         i_e = self.image_projector(i_f)
-        # TODO LN after t_f
 
         return self.similarity(t_e, i_e)
 
     def train_step(self, input_):
-        input_ = list(zip(*input_))
-        input_ = [tf.convert_to_tensor(x) for x in input_]
+        # In here only the input data is used
+        input_ = input_[0]
         with tf.GradientTape() as tape:
             tape.watch(self.trainable_variables)
-            matrix = self.call(input_, training = True)
+            matrix = self(input_, training = True)
             loss = self.loss_fn(matrix)
         trainable_vars = self.trainable_variables
         gradient = tape.gradient(loss, trainable_vars)
@@ -145,8 +150,6 @@ class AttentionPooling(tf.keras.layers.Layer):
         
     def call(self, inputs):
         shape = inputs.shape
-        #print(shape)
-        tf.print(tf.shape(inputs))
         layer = tf.keras.layers.Reshape((-1, shape[-1]))(inputs) # Change the shape to N(H*W)C
 
 
