@@ -28,7 +28,7 @@ class Loader(tf.keras.utils.Sequence):
     def __init__(self, table_path,tkzr, img_dir_path, img_size, batch_size = 16, img_path_column = 0, text_column = -1):
         super().__init__()
         self.table_path = table_path
-        self.text_info = self.load_information(self.table_path)
+        self.table = self.load_information(self.table_path)
         self.tkzr = tkzr
         self.img_size = img_size
         self.batch_size = batch_size
@@ -36,7 +36,7 @@ class Loader(tf.keras.utils.Sequence):
         self.img_path_column = img_path_column
         self.text_column = text_column
         # The length of longest sentence
-        self.MAX_LEN = self.text_info.iloc[:, text_column].str.len().max()
+        self.MAX_LEN = self.table.iloc[:, text_column].str.len().max()
 
     def load_information(self, table_path):
         info_table = pd.read_csv(table_path, index_col = False)
@@ -50,16 +50,16 @@ class Loader(tf.keras.utils.Sequence):
         start_index = index * self.batch_size
         end_index = start_index + self.batch_size
 
-        text = self.text_info.iloc[start_index:end_index, self.text_column]
+        text = self.table.iloc[start_index:end_index, self.text_column]
         text = self.tkzr(text.to_list(), max_length = self.MAX_LEN, truncation = True, padding = True)
         text = [np.array(value) for value in text.values()]
 
-        img_path  = self.text_info.iloc[start_index:end_index, self.img_path_column]
+        img_path  = self.table.iloc[start_index:end_index, self.img_path_column]
         img_path = [os.path.join(self.img_dir_path, filepath) for filepath in img_path]
         images = process_image(img_path, (self.img_size, self.img_size))
         images = np.array(images)
         
         return list(zip(text[0], text[1], images))
     def __len__(self):
-        length = self.text_info.shape[0]
+        length = self.table.shape[0]
         return int(length / self.batch_size) + min(length % self.batch_size, 1)
