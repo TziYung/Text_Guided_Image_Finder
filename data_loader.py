@@ -59,7 +59,6 @@ class Loader(tf.keras.utils.Sequence):
         images = process_image(img_path, (self.img_size, self.img_size))
         images = np.array(images)
         
-        #return list(zip(text[0], text[1], images)), None, None
         return (text[0], text[1], images), None, None
     def __len__(self):
         length = self.table.shape[0]

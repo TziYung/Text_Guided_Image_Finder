@@ -157,8 +157,6 @@ class AttentionPooling(tf.keras.layers.Layer):
 
 
         # It is replace by reduce mean
-        #mean_ = self.gap(inputs) # Apply GlobalAveragePooling, output shape would be N, 1, 1, C
-        #mean_ = tf.keras.layers.Reshape((shape[0], -1, shape[-1]))(mean_) # N, 1, C
 
         layer = tf.keras.layers.Concatenate(axis = 1)([mean_, layer]) # N, (H * W) + 1, C
 
