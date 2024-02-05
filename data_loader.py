@@ -51,15 +51,18 @@ class Loader(tf.keras.utils.Sequence):
         end_index = start_index + self.batch_size
 
         text = self.table.iloc[start_index:end_index, self.text_column]
-        text = self.tkzr(text.to_list(), max_length = self.MAX_LEN, truncation = True, padding = True)
-        text = [np.array(value) for value in text.values()]
 
         img_path  = self.table.iloc[start_index:end_index, self.img_path_column]
         img_path = [os.path.join(self.img_dir_path, filepath) for filepath in img_path]
-        images = process_image(img_path, (self.img_size, self.img_size))
-        images = np.array(images)
         
-        return (text[0], text[1], images), None, None
+        return self.process(text, img_path), None
     def __len__(self):
         length = self.table.shape[0]
         return int(length / self.batch_size) + min(length % self.batch_size, 1)
+    def process(self, text, img_path):
+        text = self.tkzr(text.to_list(), max_length = self.MAX_LEN, truncation = True, padding = True)
+        input_id, attention_mask = [np.array(value) for value in text.values()]
+        images = process_image(img_path, (self.img_size, self.img_size))
+        images = np.array(images)
+        return input_id, attention_mask, images
+        
