@@ -35,11 +35,20 @@ class Loader(tf.keras.utils.Sequence):
         self.img_dir_path = img_dir_path
         self.img_path_column = img_path_column
         self.text_column = text_column
-        # The length of longest sentence
-        self.MAX_LEN = self.table.iloc[:, text_column].str.len().max()
+        if type(self.table.iloc[0, text_column]) == str:
+            # The length of longest sentence
+            self.MAX_LEN = self.table.iloc[:, text_column].str.len().max()
+        else:
+            self.MAX_LEN = self.table.iloc[:, text_column].apply(lambda x : len(max(x, key = len))).max()
+            
+        self.epoch = 0
+    
 
     def load_information(self, table_path):
-        info_table = pd.read_csv(table_path, index_col = False)
+        if table_path[-4:] == ".csv":
+            info_table = pd.read_csv(table_path, index_col = False)
+        elif table_path[-8:] == ".parquet":
+            info_table = pd.read_parquet(table_path)
         # Drop any row that contains null value and drop reset the index
         info_table.dropna(axis='index',how='any', inplace = True)
         info_table.reset_index(inplace = True, drop = True)
@@ -51,16 +60,22 @@ class Loader(tf.keras.utils.Sequence):
         end_index = start_index + self.batch_size
 
         text = self.table.iloc[start_index:end_index, self.text_column]
+        if type(text.iloc[0]) == str:
+            text = text.to_list()
+        else:
+            text = [n[self.epoch % len(n)] for n in text]
 
         img_path  = self.table.iloc[start_index:end_index, self.img_path_column]
         img_path = [os.path.join(self.img_dir_path, filepath) for filepath in img_path]
         
-        return self.process(text, img_path), None
+        return self.process(text, img_path), None, None
+    def on_epoch_end(self):
+        self.epoch += 1
     def __len__(self):
         length = self.table.shape[0]
-        return int(length / self.batch_size) + min(length % self.batch_size, 1)
+        return int(length / self.batch_size + min(length % self.batch_size, 1))
     def process(self, text, img_path):
-        text = self.tkzr(text.to_list(), max_length = self.MAX_LEN, truncation = True, padding = True)
+        text = self.tkzr(text, max_length = self.MAX_LEN, truncation = True, padding = True)
         input_id, attention_mask = [np.array(value) for value in text.values()]
         images = process_image(img_path, (self.img_size, self.img_size))
         images = np.array(images)
