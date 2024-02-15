@@ -47,27 +47,11 @@ class CLIP(tf.keras.Model):
 
         return self.similarity(t_e, i_e)
 
-    def train_step(self, input_):
-        # In here only the input data is used
-        input_ = input_[0]
-        with tf.GradientTape() as tape:
-            tape.watch(self.trainable_variables)
-            matrix = self(input_, training = True)
-            loss = self.loss_fn(matrix)
-        trainable_vars = self.trainable_variables
-        gradient = tape.gradient(loss, trainable_vars)
-        self.opt.apply_gradients(zip(gradient, trainable_vars))
-        self.loss_tracker.update_state(loss)
-
-        return {tracker.name: tracker.result() for tracker in self.metrics}
-    def compile(self, opt):
-        super().compile()
-        self.opt = opt
     @property
     def metrics(self):
         return [self.loss_tracker]
 
-    def loss_fn(self, similarity):
+    def compute_loss(self, x, y, similarity, sample_weight):
         labels = tf.range(tf.shape(similarity)[0])
         t_loss = tf.keras.losses.SparseCategoricalCrossentropy(
             from_logits = True,
@@ -75,7 +59,10 @@ class CLIP(tf.keras.Model):
         i_loss = tf.keras.losses.SparseCategoricalCrossentropy(
             from_logits = True,
         )(labels, tf.transpose(similarity))
-        return (t_loss + i_loss) / 2
+        loss = t_loss + i_loss
+        loss /= 2
+        self.loss_tracker.update_state(loss)
+        return loss
      
 class Projector(tf.keras.layers.Layer):
     """
@@ -88,19 +75,11 @@ class Projector(tf.keras.layers.Layer):
         self.dim = dim
 
     def build(self, input_shape):
-        self.w = self.add_weight(
-            shape = (input_shape[-1], self.dim),
-            initializer = "random_normal",
-            trainable = True,
-        )
-        self.b = self.add_weight(
-            shape = (self.dim,),
-            initializer = "random_normal",
-            trainable = True,
-        )
+        self.f1 = tf.keras.layers.Dense(self.dim * 2)
+        self.f2 = tf.keras.layers.Dense(self.dim)
     def call(self, inputs):
-        emb = tf.matmul(inputs, self.w) + self.b
-        emb = tf.math.l2_normalize(emb, axis = 1)
+        emb = tf.keras.layers.LeakyReLU()(self.f1(inputs))
+        emb = self.f2(emb)
 
         return emb
 
