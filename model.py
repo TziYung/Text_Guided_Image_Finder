@@ -13,7 +13,7 @@ class CLIP(tf.keras.Model):
     of each text against all the images in the batch. Then it calculate the 
     loss of each image against all the text in the batch.
     """
-    def __init__(self, text_encoder, image_encoder, dim, attention_head, attention_dim):
+    def __init__(self, text_encoder, image_encoder, dim, attention_head, attention_dim =4 ):
         super().__init__()
         self.text_encoder = text_encoder
         self.image_encoder = image_encoder
@@ -88,7 +88,6 @@ class Projector(tf.keras.layers.Layer):
         self.dim = dim
 
     def build(self, input_shape):
-        """
         self.w = self.add_weight(
             shape = (input_shape[-1], self.dim),
             initializer = "random_normal",
@@ -99,7 +98,6 @@ class Projector(tf.keras.layers.Layer):
             initializer = "random_normal",
             trainable = True,
         )
-        """
     def call(self, inputs):
         emb = tf.matmul(inputs, self.w) + self.b
         emb = tf.math.l2_normalize(emb, axis = 1)
