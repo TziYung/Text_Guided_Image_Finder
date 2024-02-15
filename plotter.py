@@ -22,7 +22,7 @@ def plot(array, image_list, text_list, name):
             text = text.split(" ")
             text = [" ".join(text[n * 5 : (n + 1) * 5]) for n in range(math.ceil(len(text)/ 5))]
             text = "\n".join(text)
-        ax[0, index].set_title(text, fontsize = 6)
+        ax[0, index].set_title(text, fontsize = 9)
     
     fig.subplots_adjust(hspace = 0, wspace = 0)
     fig.savefig(f"{name}.png")
