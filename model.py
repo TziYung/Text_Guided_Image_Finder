@@ -13,11 +13,11 @@ class CLIP(tf.keras.Model):
     of each text against all the images in the batch. Then it calculate the 
     loss of each image against all the text in the batch.
     """
-    def __init__(self, text_encoder, image_encoder, dim, image_encoder_head):
+    def __init__(self, text_encoder, image_encoder, dim, attention_head, attention_dim):
         super().__init__()
         self.text_encoder = text_encoder
         self.image_encoder = image_encoder
-        self.attention_pooling = AttentionPooling(image_encoder_head, dim)
+        self.attention_pooling = AttentionPooling(attention_head, attention_dim)
         self.text_projector = Projector(dim)
         self.image_projector = Projector(dim)
         self.similarity = Similarity()
@@ -68,15 +68,13 @@ class CLIP(tf.keras.Model):
         return [self.loss_tracker]
 
     def loss_fn(self, similarity):
-        labels = tf.range(tf.shape(similarity)[0], dtype = "float32")
+        labels = tf.range(tf.shape(similarity)[0])
         t_loss = tf.keras.losses.SparseCategoricalCrossentropy(
             from_logits = True,
         )(labels, similarity)
-        t_loss = tf.reduce_mean(t_loss)
         i_loss = tf.keras.losses.SparseCategoricalCrossentropy(
             from_logits = True,
         )(labels, tf.transpose(similarity))
-        i_loss = tf.reduce_mean(i_loss)
         return (t_loss + i_loss) / 2
      
 class Projector(tf.keras.layers.Layer):
@@ -90,6 +88,7 @@ class Projector(tf.keras.layers.Layer):
         self.dim = dim
 
     def build(self, input_shape):
+        """
         self.w = self.add_weight(
             shape = (input_shape[-1], self.dim),
             initializer = "random_normal",
@@ -100,9 +99,10 @@ class Projector(tf.keras.layers.Layer):
             initializer = "random_normal",
             trainable = True,
         )
+        """
     def call(self, inputs):
         emb = tf.matmul(inputs, self.w) + self.b
-        emb = tf.math.l2_normalize(emb)
+        emb = tf.math.l2_normalize(emb, axis = 1)
 
         return emb
 
@@ -136,7 +136,7 @@ class Similarity(tf.keras.layers.Layer):
 
     def call(self, text_emb, image_emb):
         # Same as tf.matmul
-        similarity = tf.einsum("ax, bx -> ab",text_emb, image_emb) 
+        similarity = tf.einsum("ax, bx -> ba",text_emb, image_emb) 
         similarity *= tf.math.exp(self.temperature) 
         return similarity
 class AttentionPooling(tf.keras.layers.Layer):
@@ -172,7 +172,7 @@ class PositionalEncoding(tf.keras.layers.Layer):
         super().__init__()
     def build(self, input_shape):
         self.pe = self.add_weight(
-            shape = ( input_shape),
+            shape = ( input_shape[1:]),
             trainable = True,
         )    
     def call(self, inputs):
