@@ -61,4 +61,4 @@ if __name__ == "__main__":
         start_from_epoch = 0
     )
     clip.fit(loader, epochs = args.epochs, validation_data = val_loader, callbacks = [early_stopping])
-    clip.save_weights("model_weight")
+    clip.save_weights("./model_weight/")
