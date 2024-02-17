@@ -150,7 +150,7 @@ class PositionalEncoding(tf.keras.layers.Layer):
         super().__init__()
     def build(self, input_shape):
         self.pe = self.add_weight(
-            name = "positoinal encoding",
+            name = "positoinal_encoding",
             shape = ( input_shape[1:]),
             trainable = True,
         )    
