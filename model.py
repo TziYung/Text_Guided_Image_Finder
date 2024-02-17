@@ -103,6 +103,7 @@ class Similarity(tf.keras.layers.Layer):
         """
         
         self.temperature = self.add_weight(
+            name = "temperature",
             shape = (1,),
             # This use the default value in CLIP research paper
             initializer = tf.keras.initializers.Constant(value = 0.07),
@@ -149,6 +150,7 @@ class PositionalEncoding(tf.keras.layers.Layer):
         super().__init__()
     def build(self, input_shape):
         self.pe = self.add_weight(
+            name = "positoinal encoding",
             shape = ( input_shape[1:]),
             trainable = True,
         )    
