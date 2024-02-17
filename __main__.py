@@ -39,7 +39,7 @@ if __name__ == "__main__":
         text_column = args.text_column
     )
     clip = model.CLIP(text_encoder, image_encoder, dim = args.dim, attention_head = args.attention_head, attention_dim = args.attention_dim)
-    clip.compile(tf.keras.optimizers.Adam(learning_rate=0.001))
+    clip.compile(tf.keras.optimizers.Adam(learning_rate = 1e-4))
     clip.fit(loader, epochs = args.epochs)
 
 
