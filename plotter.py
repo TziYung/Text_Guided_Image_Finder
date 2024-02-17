@@ -7,6 +7,7 @@ def plot(array, image_list, text_list, name):
     fig, ax  = plt.subplots(nrows = len(array), ncols = len(array[0]) + 1, figsize = (30, 10), dpi = 600)
     for index, image in enumerate(image_list):
         ax[index, 0].imshow(image, aspect = "auto")
+    array = tf.math.square(array - tf.reduce_min(array))
     max_, min_ = tf.reduce_max(array), tf.reduce_min(array)
     array = (array - min_)/ (max_ - min_)
     for y_index, value_list in enumerate(array):
@@ -27,5 +28,3 @@ def plot(array, image_list, text_list, name):
     fig.subplots_adjust(hspace = 0, wspace = 0)
     fig.savefig(f"{name}.png")
     plt.close(fig)
-
-
