@@ -54,4 +54,11 @@ if __name__ == "__main__":
         val_loader = None
     clip = model.CLIP(text_encoder, image_encoder, dim = args.dim, attention_head = args.attention_head, attention_dim = args.attention_dim)
     clip.compile(tf.keras.optimizers.Adam(learning_rate = 1e-4))
-    clip.fit(loader, epochs = args.epochs, validation_data = val_loader)
+    early_stopping = tf.keras.callbacks.EarlyStopping(
+        monitor = 'val_loss',
+        patience = 10,
+        restore_best_weights = True,
+        start_from_epoch = 0
+    )
+    clip.fit(loader, epochs = args.epochs, validation_data = val_loader, callbacks = [early_stopping])
+    clip.save_weights("model_weight")
