@@ -11,7 +11,8 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--image_dir_path", required = True, type = str)
     parser.add_argument("-b", "--batch_size", default = 4, type = int)
     parser.add_argument("-d", "--dim", default = 16, type = int)
-    parser.add_argument("-n", "--num_of_head", default = 4, type = int)
+    parser.add_argument("-ah", "--attention_head", default = 4, type = int)
+    parser.add_argument("-ad", "--attention_dim", default = 4, type = int)
     parser.add_argument("-e", "--epochs", default = 2, type = int)
     parser.add_argument("--text_column", default = -1, type = int)
     parser.add_argument("--img_path_column", default = 0, type = int)
@@ -37,7 +38,7 @@ if __name__ == "__main__":
         img_path_column = args.img_path_column,
         text_column = args.text_column
     )
-    clip = model.CLIP(text_encoder, image_encoder, dim = args.dim, image_encoder_head = args.num_of_head)
+    clip = model.CLIP(text_encoder, image_encoder, dim = args.dim, attention_head = args.attention_head, attention_dim = args.attention_dim)
     clip.compile(tf.keras.optimizers.Adam(learning_rate=0.001))
     clip.fit(loader, epochs = args.epochs)
 
