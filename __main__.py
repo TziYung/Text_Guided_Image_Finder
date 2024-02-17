@@ -55,7 +55,7 @@ if __name__ == "__main__":
     clip = model.CLIP(text_encoder, image_encoder, dim = args.dim, attention_head = args.attention_head, attention_dim = args.attention_dim)
     clip.compile(tf.keras.optimizers.Adam(learning_rate = 1e-4))
     early_stopping = tf.keras.callbacks.EarlyStopping(
-        monitor = 'val_loss',
+        monitor = 'val_Loss',
         patience = 10,
         restore_best_weights = True,
         start_from_epoch = 0
