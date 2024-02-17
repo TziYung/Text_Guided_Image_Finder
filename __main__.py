@@ -14,6 +14,8 @@ if __name__ == "__main__":
     parser.add_argument("-ah", "--attention_head", default = 4, type = int)
     parser.add_argument("-ad", "--attention_dim", default = 4, type = int)
     parser.add_argument("-e", "--epochs", default = 2, type = int)
+    parser.add_argument("-vp", "--val_table_path", default =None, type = str)
+    parser.add_argument("-vi", "--val_image_dir_path", default = None, type = str)
     parser.add_argument("--text_column", default = -1, type = int)
     parser.add_argument("--img_path_column", default = 0, type = int)
 
@@ -38,9 +40,18 @@ if __name__ == "__main__":
         img_path_column = args.img_path_column,
         text_column = args.text_column
     )
+    if args.val_table_path:
+        val_loader = Loader(table_path = args.val_table_path,
+            tkzr = tkzr,
+            img_dir_path = args.val_image_dir_path,
+            img_size = 224,
+            batch_size = args.batch_size,
+            img_path_column = args.img_path_column,
+            text_column = args.text_column
+        )
+        val_loader.MAX_LEN = loader.MAX_LEN
+    else:
+        val_loader = None
     clip = model.CLIP(text_encoder, image_encoder, dim = args.dim, attention_head = args.attention_head, attention_dim = args.attention_dim)
     clip.compile(tf.keras.optimizers.Adam(learning_rate = 1e-4))
-    clip.fit(loader, epochs = args.epochs)
-
-
-
+    clip.fit(loader, epochs = args.epochs, validation_data = val_loader)
