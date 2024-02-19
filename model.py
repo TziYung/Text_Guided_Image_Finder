@@ -80,6 +80,7 @@ class Projector(tf.keras.layers.Layer):
     def call(self, inputs):
         emb = tf.keras.layers.LeakyReLU()(self.f1(inputs))
         emb = self.f2(emb)
+        emb = tf.math.l2_normalize(emb, axis = 1)
 
         return emb
 
