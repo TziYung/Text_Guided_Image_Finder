@@ -1,8 +1,8 @@
-# Word-Guided Image Finder
+# Text-Guided Image Finder
 
 # Description:
 
-The Word-Guided Image Finder is an application that leverages cutting-edge techniques in artificial intelligence to enable users to search for images based on textual descriptions. This project integrates the structure of CLIP (Contrastive Language-Image Pre-training)[1] and utilizes DistilBERT[2] as the text encoder along with EfficientNet[3] as the image encoder. Trained on the image from COCO 2017 dataset[0] with text annotation from [hugging face](https://huggingface.co/datasets/phiyodr/coco2017), this application learns to understand the nuanced relationships between text and images, providing accurate and meaningful results.
+The Text-Guided Image Finder is an application that leverages cutting-edge techniques in artificial intelligence to enable users to search for images based on textual descriptions. This project integrates the structure of CLIP (Contrastive Language-Image Pre-training)[1] and utilizes DistilBERT[2] as the text encoder along with EfficientNet[3] as the image encoder. Trained on the image from COCO 2017 dataset[0] with text annotation from [hugging face](https://huggingface.co/datasets/phiyodr/coco2017), this application learns to understand the nuanced relationships between text and images, providing accurate and meaningful results.
 
 # Contrastive Language-Image Pre-training(CLIP)
 
