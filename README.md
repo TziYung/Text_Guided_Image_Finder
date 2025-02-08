@@ -12,7 +12,7 @@ Image from Radford, Alec, et al. "Learning transferable visual models from natur
 
 As demonstrated in the paper [CLIP](https://arxiv.org/pdf/2103.00020.pdf), it achieves the objective of pairing given text and images by learning a multi-modal embedding space. This approach applies contrastive representation learning to compare the similarity between images and sets of text. It trains both a text encoder and an image encoder to maximize the cosine similarity of the image and text embeddings for the $N$correct pairs in the batch, while simultaneously minimizing the similarity for $N^2 - N$ incorrect pairs. Optimization is performed using symmetric cross-entropy for the similarity loss.
 
-In our application, we utilize EfficientNetB0 as the image encoder and DistilBERT as the text encoder. For the image encoder, global average pooling is replaced with an attention pooling mechanism. Concerning the text encoder, its output is initially passed through layer normalization, after that, only the End of Text (EOT) of each is kept as output, as it is deemed to contain the most information.
+In my application, I utilize EfficientNetB0 as the image encoder and DistilBERT as the text encoder. For the image encoder, global average pooling is replaced with an attention pooling mechanism. Concerning the text encoder, its output is initially passed through layer normalization, after that, only the End of Text (EOT) of each is kept as output, as it is deemed to contain the most information.
 
 Following this, both the feature-extracted image encoder and text encoder are passed through a projector. This component takes either the text encoder's output or the image encoder's output and subjects it to a linear function, projecting the output into a shared embedding space. Subsequently, L2 normalization is applied, dividing each value by the square root of the squared sum of its channels.
 
@@ -26,7 +26,7 @@ The output of the image encoder is( $N \times H \times W \times  C)$ reshaped to
 
 ### Loss:
 
-Given that CLIP utilizes contrastive representation learning, it produces an $N\times N$ array as its output. This signifies that if we designate $i$ as the index of the matrix, it becomes obvious that every $(i,i)$ is correct pair, while all other pairs are incorrect. To formulate labels for loss calculation, we simply generate a list ranging from 0 to $N-1$, where the $i_{th}$ element of each $\text{prediction}_i$ corresponds to the correct prediction. The loss for the text encoder is computed using cross-entropy along axis 0 of the matrix, while for the image encoder, it is calculated along axis 1. The overall model loss is then determined as the mean of these two losses.
+Given that CLIP utilizes contrastive representation learning, it produces an $N\times N$ array as its output. This signifies that if we designate $i$ as the index of the matrix, it becomes obvious that every $(i,i)$ is correct pair, while all other pairs are incorrect. To formulate labels for loss calculation, simply generate a list ranging from 0 to $N-1$, where the $i_{th}$ element of each $\text{prediction}_i$ corresponds to the correct prediction. The loss for the text encoder is computed using cross-entropy along axis 0 of the matrix, while for the image encoder, it is calculated along axis 1. The overall model loss is then determined as the mean of these two losses.
 
 # Result:
 
